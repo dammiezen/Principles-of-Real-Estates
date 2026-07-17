@@ -1555,7 +1555,7 @@
           </div>
 
           <aside class="calc-side">
-            <div class="side-card"><h3>Sample Assumption</h3><p>Buyer closing cost percentage defaults to 0%. Enter a percentage only when buyer closing costs apply.</p></div>
+            <div class="side-card"><h3>Sample Assumption</h3><p>Buyer closing cost percentage starts at 2.5% for the sample. You can change this percentage when a different buyer closing cost applies.</p></div>
             <div class="side-card"><h3>Profit Rating</h3><p><strong>Green:</strong> $25,000+ net profit</p><p><strong>Orange:</strong> $0–$24,999</p><p><strong>Red:</strong> Negative profit</p></div>
           </aside>
         </div>
@@ -1695,12 +1695,12 @@
           b_ltv1:75,b_ltv2:80,b_rent:2500,b_rate:7,b_term:30,b_taxes:100,b_insurance:150,b_hoa:0
         },
         financed:{
-          f_arv:305000,f_purchase:150000,f_rehab:80000,f_hmlPct:75,f_lenderFee:5235,
+          f_arv:305000,f_purchase:265000,f_rehab:80000,f_hmlPct:75,f_lenderFee:9248.5,
           f_closingPct:2.5,f_titlePct:1,f_survey:1000,f_additional:2000,
           f_realtorPct:6,f_sellTitlePct:1,f_holdingPct:5
         },
         cash:{
-          c_arv:285000,c_purchase:205000,c_rehab:30000,c_lenderFee:0,c_closingPct:0,
+          c_arv:285000,c_purchase:265000,c_rehab:30000,c_lenderFee:0,c_closingPct:2.5,
           c_titlePct:1,c_survey:1000,c_additional:2000,c_realtorPct:6,c_sellTitlePct:1
         },
         wholesale:{
@@ -2292,10 +2292,56 @@
         }
       });
 
+      function migrateV12SampleValues(){
+        const migrationKey="debaCalcMigration_v12";
+        if(localStorage.getItem(migrationKey)==="done") return;
+
+        try{
+          const financedKey="debaCalc_financed";
+          const financedSaved=JSON.parse(localStorage.getItem(financedKey) || "null");
+
+          if(
+            financedSaved &&
+            Number(financedSaved.f_purchase)===150000 &&
+            Number(financedSaved.f_arv)===305000 &&
+            Number(financedSaved.f_rehab)===80000
+          ){
+            financedSaved.f_purchase=265000;
+            financedSaved.f_lenderFee=9248.5;
+            financedSaved.f_closingPct=2.5;
+            financedSaved.f_titlePct=1;
+            localStorage.setItem(financedKey,JSON.stringify(financedSaved));
+          }
+
+          const cashKey="debaCalc_cash";
+          const cashSaved=JSON.parse(localStorage.getItem(cashKey) || "null");
+
+          if(
+            cashSaved &&
+            Number(cashSaved.c_purchase)===205000 &&
+            Number(cashSaved.c_arv)===285000 &&
+            Number(cashSaved.c_rehab)===30000 &&
+            Number(cashSaved.c_closingPct)===0
+          ){
+            cashSaved.c_purchase=265000;
+            cashSaved.c_closingPct=2.5;
+            cashSaved.c_titlePct=1;
+            localStorage.setItem(cashKey,JSON.stringify(cashSaved));
+          }
+        }catch(error){
+          // Invalid saved data is ignored; normal defaults will still work.
+        }
+
+        localStorage.setItem(migrationKey,"done");
+      }
+
       function initCalculators(){
+        migrateV12SampleValues();
+
         Object.keys(defaults).forEach(calc=>{
           if(!loadCalc(calc)) populate(calc,defaults[calc]);
         });
+
         enforceLockedInputs();
       }
 
